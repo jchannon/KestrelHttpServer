@@ -237,7 +237,6 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core
         // Graceful shutdown if possible
         public async Task StopAsync(CancellationToken cancellationToken)
         {
-            // If no endpoints are configured directly using KestrelServerOptions, use those configured via the IServerAddressesFeature.
             var copiedAddresses = _serverAddresses.Addresses.ToArray();
             _serverAddresses.Addresses.Clear();
 
@@ -288,6 +287,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core
                     }
                 }
             }
+
             BindToEndpoints(listenOptions, serviceContext, application);
         }
 
