@@ -107,6 +107,33 @@ namespace Microsoft.AspNetCore.Server.Kestrel.FunctionalTests
         }
 
         [Fact]
+        public Task BadRequestIfHostHeaderMissing()
+        {
+            return TestBadRequest(
+                "GET / HTTP/1.1\r\n\r\n",
+                "400 Bad Request",
+                "Request is missing Host header.");
+        }
+
+        [Fact]
+        public Task BadRequestIfMultipleHostHeaders()
+        {
+            return TestBadRequest("GET / HTTP/1.1\r\nHost: localhost\r\nHost: localhost\r\n\r\n",
+                "400 Bad Request",
+                "Multiple Host headers.");
+        }
+
+        [Theory]
+        [MemberData(nameof(InvalidHostHeaderData))]
+        public Task BadRequestIfHostHeaderDoesNotMatchRequestTarget(string requestTarget, string host)
+        {
+            return TestBadRequest(
+                $"{requestTarget} HTTP/1.1\r\nHost: {host}\r\n\r\n",
+                "400 Bad Request",
+                $"Invalid Host header: '{host.Trim()}'");
+        }
+
+        [Fact]
         public async Task BadRequestLogsAreNotHigherThanInformation()
         {
             var maxLogLevel = LogLevel.Trace;
@@ -211,5 +238,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.FunctionalTests
         public static TheoryData<string> UnrecognizedHttpVersionData => HttpParsingData.UnrecognizedHttpVersionData;
 
         public static IEnumerable<object[]> InvalidRequestHeaderData => HttpParsingData.RequestHeaderInvalidData;
+
+        public static TheoryData<string,string> InvalidHostHeaderData => HttpParsingData.HostHeaderInvalidData;
     }
 }

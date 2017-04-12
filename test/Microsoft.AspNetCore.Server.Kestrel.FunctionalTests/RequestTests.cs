@@ -1213,6 +1213,24 @@ namespace Microsoft.AspNetCore.Server.Kestrel.FunctionalTests
             }
         }
 
+        [Theory]
+        [MemberData(nameof(HostHeaderData))]
+        public async Task MatchesValidRequestTargetAndHostHeader(string request, string hostHeader)
+        {
+            using (var server = new TestServer(context => Task.CompletedTask))
+            {
+                using (var connection = server.CreateConnection())
+                {
+                    await connection.Send($"{request} HTTP/1.1",
+                        $"Host: {hostHeader}",
+                        "",
+                        "");
+
+                    await connection.Receive("HTTP/1.1 200 OK");
+                }
+            }
+        }
+
         private async Task TestRemoteIPAddress(string registerAddress, string requestAddress, string expectAddress)
         {
             var builder = new WebHostBuilder()
@@ -1249,5 +1267,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.FunctionalTests
                 Assert.NotEmpty(facts["RemotePort"].Value<string>());
             }
         }
+
+        public static TheoryData<string, string> HostHeaderData => HttpParsingData.HostHeaderData;
     }
 }
