@@ -67,7 +67,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.FunctionalTests
         public Task BadRequestIfMethodRequiresLengthButNoContentLengthOrTransferEncodingInRequest(string method)
         {
             return TestBadRequest(
-                $"{method} / HTTP/1.1\r\n\r\n",
+                $"{method} / HTTP/1.1\r\nHost:\r\n\r\n",
                 "411 Length Required",
                 $"{method} request contains no Content-Length or Transfer-Encoding header");
         }
@@ -89,7 +89,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.FunctionalTests
         public Task BadRequestIfContentLengthInvalid(string contentLength)
         {
             return TestBadRequest(
-                $"POST / HTTP/1.1\r\nContent-Length: {contentLength}\r\n\r\n",
+                $"POST / HTTP/1.1\r\nHost:\r\nContent-Length: {contentLength}\r\n\r\n",
                 "400 Bad Request",
                 $"Invalid content length: {contentLength}");
         }

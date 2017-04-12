@@ -38,9 +38,17 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Transport.Libuv.Internal
         private ExceptionDispatchInfo _closeError;
         private readonly ILibuvTrace _log;
         private readonly TimeSpan _shutdownTimeout;
+#if DEBUG
+        private readonly string _stackTrace;
+#endif
 
         public LibuvThread(LibuvTransport transport)
         {
+#if DEBUG
+            // Capture stack trace to make it easier to figure out what started this thread
+            // once a debugger is attached.
+            _stackTrace = Environment.StackTrace;
+#endif
             _transport = transport;
             _appLifetime = transport.AppLifetime;
             _log = transport.Log;
