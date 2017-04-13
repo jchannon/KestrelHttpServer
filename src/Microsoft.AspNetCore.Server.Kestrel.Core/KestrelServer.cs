@@ -172,6 +172,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core
         {
             var copiedAddresses = _serverAddresses.Addresses.ToArray();
             _serverAddresses.Addresses.Clear();
+
             foreach (var address in copiedAddresses)
             {
                 var parsedAddress = ServerAddress.FromUrl(address);
@@ -197,6 +198,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core
                 {
                     // "localhost" for both IPv4 and IPv6 can't be represented as an IPEndPoint.
                     await StartLocalhostAsync(parsedAddress, serviceContext, application, cancellationToken);
+
                     // If StartLocalhost doesn't throw, there is at least one listener.
                     // The port cannot change for "localhost".
                     _serverAddresses.Addresses.Add(parsedAddress.ToString());
@@ -238,78 +240,6 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core
 
         // Graceful shutdown if possible
         public async Task StopAsync(CancellationToken cancellationToken)
-        {
-            var copiedAddresses = _serverAddresses.Addresses.ToArray();
-            _serverAddresses.Addresses.Clear();
-
-            foreach (var address in copiedAddresses)
-            {
-                var parsedAddress = ServerAddress.FromUrl(address);
-
-                if (parsedAddress.Scheme.Equals("https", StringComparison.OrdinalIgnoreCase))
-                {
-                    throw new InvalidOperationException($"HTTPS endpoints can only be configured using {nameof(KestrelServerOptions)}.{nameof(KestrelServerOptions.Listen)}().");
-                }
-
-                if (!string.IsNullOrEmpty(parsedAddress.PathBase))
-                {
-                    throw new InvalidOperationException($"A path base can only be configured using {nameof(IApplicationBuilder)}.UsePathBase().");
-                }
-
-                if (parsedAddress.IsUnixPipe)
-                {
-                    listenOptions.Add(new ListenOptions(parsedAddress.UnixPipePath)
-                    {
-                        Scheme = parsedAddress.Scheme,
-                    });
-                }
-                else
-                {
-                    if (string.Equals(parsedAddress.Host, "localhost", StringComparison.OrdinalIgnoreCase))
-                    {
-                        // "localhost" for both IPv4 and IPv6 can't be represented as an IPEndPoint.
-                        StartLocalhost(parsedAddress, serviceContext, application);
-
-                        // If StartLocalhost doesn't throw, there is at least one listener.
-                        // The port cannot change for "localhost".
-                        _serverAddresses.Addresses.Add(parsedAddress.ToString());
-                    }
-                    else
-                    {
-                        // These endPoints will be added later to _serverAddresses.Addresses
-                        listenOptions.Add(new ListenOptions(CreateIPEndPoint(parsedAddress))
-                        {
-                            Scheme = parsedAddress.Scheme,
-                        });
-                    }
-                }
-            }
-
-            BindToEndpoints(listenOptions, serviceContext, application);
-        }
-
-        private void BindToEndpoints<TContext>(List<ListenOptions> listenOptions, ServiceContext serviceContext, IHttpApplication<TContext> application)
-        {
-            foreach (var endPoint in listenOptions)
-            {
-                var connectionHandler = new ConnectionHandler<TContext>(endPoint, serviceContext, application);
-                var transport = _transportFactory.Create(endPoint, connectionHandler);
-                _transports.Add(transport);
-
-                try
-                {
-                    transport.BindAsync().Wait();
-                }
-                catch (AggregateException ex) when (ex.InnerException is AddressInUseException)
-                {
-                    throw new IOException($"Failed to bind to address {endPoint}: address already in use.", ex);
-                }
-
-                // If requested port was "0", replace with assigned dynamic port.
-                _serverAddresses.Addresses.Add(endPoint.ToString());
-            }
-        }
-
         {
             if (Interlocked.Exchange(ref _stopped, 1) == 1)
             {

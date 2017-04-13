@@ -346,7 +346,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.FunctionalTests
         }
 
         [ConditionalFact]
-        [PortSupportedCondition(5000)]
+        [PortSupportedCondition(5001)]
         public async Task DoesNotOverrideDirectConfigurationWithIServerAddressesFeature_IfAddressesEmpty()
         {
             var endPointAddress = "http://localhost:5001";
